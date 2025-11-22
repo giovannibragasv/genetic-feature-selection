@@ -58,3 +58,47 @@ class DataLoader:
             f"Fashion-MNIST carregado com sucesso. X_train: {X_train.shape}, X_test: {X_test.shape}"
         )
         return X_train, y_train, X_test, y_test
+
+    def load_microarray_dataset(
+        self, dataset_name: str, test_size: float = 0.3, random_state: int = 42
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Carrega um conjunto de dados de microarray específico a partir de arquivos .x e .dbc.
+
+        Args:
+            dataset_name (str): Nome da pasta do conjunto de dados (por exemplo, "leukemia", "colon", etc.).
+            test_size (float): Proporção do conjunto de teste.
+            random_state (int): Semente para reprodução dos resultados.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: Arrays numpy contendo os dados de treinamento e teste.
+        """
+        print(f"Carregando conjunto de dados de microarray: {dataset_name}")
+
+        dataset_path = self.data_root / dataset_name
+
+        x_files = list(dataset_path.glob("*.x"))
+        dbc_files = list(dataset_path.glob("*.dbc"))
+
+        if not x_files or not dbc_files:
+            raise FileNotFoundError(f"Arquivos .x ou .dbc não encontrados em {dataset_path}")
+
+        X = self._load_x_file(x_files[0])
+        y = self._load_dbc_file(dbc_files[0])
+
+        if len(X) != len(y):
+            print(
+                f"Aviso: O número de amostras em X ({len(X)}) e y ({len(y)}) não coincide. Ajustando para o menor tamanho."
+            )
+            min_len = min(len(X), len(y))
+            X, y = X[:min_len], y[:min_len]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state, stratify=y
+        )
+
+        print(
+            f"Conjunto de dados {dataset_name} carregado com sucesso. X_train: {X_train.shape}, X_test: {X_test.shape}"
+        )
+        print(f"Features: {X.shape[1]}, Samples: {X.shape[0]}, Classes: {len(np.unique(y))}")
+        return X_train, y_train, X_test, y_test
