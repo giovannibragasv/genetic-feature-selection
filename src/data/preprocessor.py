@@ -63,3 +63,31 @@ class DataPreprocessor:
         if self.scaler is not None:
             return self.scaler.transform(X)
         return X.copy()
+
+    def split_data(
+        self, X: np.ndarray, y: np.ndarray, test_size: float = 0.3, stratify: bool = True
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Divide dados em treino e teste conforme metodologia do artigo.
+
+        Args:
+            X (np.ndarray): Features.
+            y (np.ndarray): Labels.
+            test_size (float): Proporção do conjunto de teste (padrão: 0.3 = 30%).
+            stratify (bool): Se True, mantém proporção de classes.
+
+        Returns:
+            Tuple: X_train, X_test, y_train, y_test.
+        """
+        stratify_param = y if stratify else None
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=self.random_state, stratify=stratify_param
+        )
+
+        print(f"Divisão treino/teste: {int((1-test_size)*100)}/{int(test_size*100)}")
+        print(f"Treino: {X_train.shape}, Teste: {X_test.shape}")
+        print(f"Distribuição treino: {np.bincount(y_train)}")
+        print(f"Distribuição teste: {np.bincount(y_test)}")
+
+        return X_train, X_test, y_train, y_test
