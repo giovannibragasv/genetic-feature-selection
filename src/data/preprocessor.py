@@ -91,3 +91,23 @@ class DataPreprocessor:
         print(f"Distribuição teste: {np.bincount(y_test)}")
 
         return X_train, X_test, y_train, y_test
+
+    def preprocess(
+        self, X: np.ndarray, y: np.ndarray, test_size: float = 0.3, stratify: bool = True
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Pipeline completo de preprocessamento: normaliza e divide dados.
+
+        Args:
+            X (np.ndarray): Features.
+            y (np.ndarray): Labels.
+            test_size (float): Proporção do conjunto de teste.
+            stratify (bool): Se True, mantém proporção de classes.
+
+        Returns:
+            Tuple: X_train, X_test, y_train, y_test (já normalizados).
+        """
+        X_normalized, y = self.fit_transform(X, y)
+        X_train, X_test, y_train, y_test = self.split_data(X_normalized, y, test_size, stratify)
+
+        return X_train, X_test, y_train, y_test
