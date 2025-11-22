@@ -17,14 +17,14 @@ class DataLoader:
         self.data_root = Path(data_root)
 
     def load_fashion_mnist(
-        self, train_samples: int = 80000, test_samples: int = 20000, random_state: int = 42
+        self, train_samples: int = 60000, test_samples: int = 10000, random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Carrega o conjunto de dados Fashion-MNIST a partir de arquivos CSV dado especificações no artigo origina.
-
+        Nota: no artigo, o autor utiliza 80 mil amostras, mas o dataset original possui 60000 amostras de treino e 10000 de teste
         Args:
-            train_samples (int): Número de amostras para o conjunto de treinamento (80000 como no artigo original).
-            test_samples (int): Número de amostras para o conjunto de teste (20000 como no artigo original).
+            train_samples (int): Número de amostras para o conjunto de treinamento.
+            test_samples (int): Número de amostras para o conjunto de teste.
             random_state (int): Semente para reprodução dos resultados.
 
         Returns:
@@ -34,8 +34,8 @@ class DataLoader:
             f"Carregando Fashion-MNIST com {train_samples} amostras de treino e {test_samples} amostras de teste."
         )
 
-        train_path = self.data_root / "FASHION_MNIST" / "fashion-mnist_train.csv"
-        test_path = self.data_root / "FASHION_MNIST" / "fashion-mnist_test.csv"
+        train_path = self.data_root / "FASHION-MNIST" / "fashion-mnist_train.csv"
+        test_path = self.data_root / "FASHION-MNIST" / "fashion-mnist_test.csv"
 
         train_df = pd.read_csv(train_path)
         y_train = train_df.iloc[:, 0].values
