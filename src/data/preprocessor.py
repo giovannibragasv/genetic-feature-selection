@@ -111,3 +111,45 @@ class DataPreprocessor:
         X_train, X_test, y_train, y_test = self.split_data(X_normalized, y, test_size, stratify)
 
         return X_train, X_test, y_train, y_test
+
+    def remove_constant_features(
+        self, X: np.ndarray, threshold: float = 0.0
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Remove features com variância zero ou muito baixa.
+
+        Args:
+            X (np.ndarray): Features.
+            threshold (float): Limiar mínimo de variância.
+
+        Returns:
+            Tuple: Features filtradas e índices mantidos.
+        """
+        variances = np.var(X, axis=0)
+        mask = variances > threshold
+
+        n_removed = (~mask).sum()
+        if n_removed > 0:
+            print(f"Removidas {n_removed} features com variância <= {threshold}")
+
+        return X[:, mask], np.where(mask)[0]
+
+    def get_feature_statistics(self, X: np.ndarray) -> dict:
+        """
+        Calcula estatísticas descritivas das features.
+
+        Args:
+            X (np.ndarray): Features.
+
+        Returns:
+            dict: Estatísticas (mean, std, min, max, etc).
+        """
+        return {
+            "n_samples": X.shape[0],
+            "n_features": X.shape[1],
+            "mean": np.mean(X, axis=0),
+            "std": np.std(X, axis=0),
+            "min": np.min(X, axis=0),
+            "max": np.max(X, axis=0),
+            "median": np.median(X, axis=0),
+        }
