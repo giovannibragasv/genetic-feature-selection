@@ -153,3 +153,33 @@ class DataPreprocessor:
             "max": np.max(X, axis=0),
             "median": np.median(X, axis=0),
         }
+
+
+def preprocess_dataset(
+    X: np.ndarray,
+    y: np.ndarray,
+    normalization: str = "standard",
+    test_size: float = 0.3,
+    remove_constant: bool = False,
+    random_state: int = 42,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Função de conveniência para preprocessamento completo.
+
+    Args:
+        X (np.ndarray): Features.
+        y (np.ndarray): Labels.
+        normalization (str): Tipo de normalização.
+        test_size (float): Proporção do teste.
+        remove_constant (bool): Se True, remove features constantes.
+        random_state (int): Semente aleatória.
+
+    Returns:
+        Tuple: X_train, X_test, y_train, y_test.
+    """
+    preprocessor = DataPreprocessor(normalization, random_state)
+
+    if remove_constant:
+        X, _ = preprocessor.remove_constant_features(X)
+
+    return preprocessor.preprocess(X, y, test_size)
