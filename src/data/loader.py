@@ -1,4 +1,5 @@
 import os
+import re
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -15,6 +16,159 @@ class DataLoader:
             data_root (str): Caminho para o diretório raiz dos dados.
         """
         self.data_root = Path(data_root)
+
+    def _parse_elvira_dbc(self, filepath: Path) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Parser completo para arquivos .dbc em formato Elvira.
+        Extrai dados da seção 'cases' e metadados dos nós.
+
+        Args:
+            filepath (Path): Caminho para arquivo .dbc.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: Features (X) e labels (y).
+        """
+        print(f"Parseando arquivo Elvira: {filepath.name}")
+
+        with open(filepath, "r", encoding="latin1") as f:
+            content = f.read()
+
+        n_cases_match = re.search(r"number-of-cases\s*=\s*(\d+)", content)
+        if n_cases_match:
+            n_cases = int(n_cases_match.group(1))
+            print(f"Número de casos esperados: {n_cases}")
+
+        nodes = []
+        node_pattern = r"node\s+(\w+)\s*\([^)]+\)\s*\{"
+        for match in re.finditer(node_pattern, content):
+            node_name = match.group(1)
+            nodes.append(node_name)
+
+        print(f"Encontrados {len(nodes)} nós/variáveis")
+
+        cases_match = re.search(r"cases\s*=\s*\((.*?)\)\s*;", content, re.DOTALL)
+
+        if not cases_match:
+            raise ValueError(f"Seção 'cases' não encontrada em {filepath.name}")
+
+        cases_text = cases_match.group(1)
+
+        case_rows = []
+
+        for line in cases_text.split("["):
+            if not line.strip() or line.strip().startswith("//"):
+                continue
+
+            line = line.split("]")[0].strip()
+
+            if not line:
+                continue
+
+            values_str = re.sub(r"\s+", " ", line).strip()
+
+            tokens = []
+            for token in values_str.split(","):
+                token = token.strip()
+                if token:
+                    tokens.append(token)
+
+            if tokens:
+                case_rows.append(tokens)
+
+        print(f"Extraídos {len(case_rows)} casos")
+
+        if not case_rows:
+            raise ValueError("Nenhum dado foi extraído da seção cases")
+
+        label_node = nodes[0] if nodes else None
+        print(f"Nó de label: {label_node}")
+
+        processed_data = []
+        labels = []
+
+        for row in case_rows:
+            if not row:
+                continue
+
+            label_value = row[0]
+            if label_value in ["positive", "negative", "normal", "tumor"]:
+                labels.append(0 if label_value in ["positive", "tumor"] else 1)
+            else:
+                try:
+                    labels.append(int(label_value))
+                except:
+                    labels.append(0)
+
+            features = []
+            for val in row[1:]:
+                try:
+                    features.append(float(val))
+                except:
+                    features.append(0.0)
+
+            processed_data.append(features)
+
+        X = np.array(processed_data, dtype=np.float32)
+        y = np.array(labels, dtype=np.int32)
+
+        print(f"Matriz de dados: X={X.shape}, y={y.shape}")
+        print(f"Classes únicas em y: {np.unique(y)}")
+
+        return X, y
+
+    def _load_java_serialized(self, filepath: Path) -> np.ndarray:
+        """
+        Carrega arquivo .x serializado em Java (formato Elvira).
+
+        Args:
+            filepath (Path): Caminho para arquivo .x.
+
+        Returns:
+            np.ndarray: Matriz de features.
+        """
+        print(f"Tentando desserializar arquivo Java: {filepath.name}")
+
+        try:
+            import javaobj
+
+            with open(filepath, "rb") as f:
+                obj = javaobj.loads(f.read())
+
+            print("Objeto Java deserializado com sucesso")
+            return self._extract_data_from_java_object(obj)
+
+        except ImportError:
+            print("Biblioteca javaobj não disponível, tentando parser alternativo")
+            return self._parse_java_serialized_alternative(filepath)
+
+    def _parse_java_serialized_alternative(self, filepath: Path) -> np.ndarray:
+        """
+        Parser alternativo para arquivos Java serializados sem biblioteca externa.
+        """
+        with open(filepath, "rb") as f:
+            content = f.read()
+
+        try:
+            text_parts = []
+            i = 0
+            while i < len(content):
+                if content[i] >= 32 and content[i] < 127:
+                    text_parts.append(chr(content[i]))
+                i += 1
+
+            text = "".join(text_parts)
+            numbers = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", text)
+
+            if numbers:
+                float_values = [float(n) for n in numbers if "." in n or "e" in n.lower()]
+                if len(float_values) > 100:
+                    print(f"Extraídos {len(float_values)} valores numéricos")
+                    return np.array(float_values).reshape(-1, 1)
+
+        except Exception as e:
+            print(f"Parser alternativo falhou: {e}")
+
+        raise ValueError(f"Não foi possível deserializar {filepath.name}")
 
     def load_fashion_mnist(
         self, train_samples: int = 60000, test_samples: int = 10000, random_state: int = 42
@@ -64,7 +218,7 @@ class DataLoader:
         self, dataset_name: str, test_size: float = 0.3, random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
-        Carrega um conjunto de dados de microarray específico a partir de arquivos .x e .dbc.
+        Carrega um conjunto de dados de microarray específico a partir de arquivos .dbc (formato Elvira).
 
         Args:
             dataset_name (str): Nome da pasta do conjunto de dados.
@@ -77,46 +231,27 @@ class DataLoader:
         print(f"Carregando conjunto de dados de microarray: {dataset_name}")
 
         dataset_path = self.data_root / dataset_name
-
-        x_files = sorted(list(dataset_path.glob("*.x")))
         dbc_files = sorted(list(dataset_path.glob("*.dbc")))
 
-        if not x_files:
-            raise FileNotFoundError(f"Arquivos .x não encontrados em {dataset_path}")
         if not dbc_files:
             raise FileNotFoundError(f"Arquivos .dbc não encontrados em {dataset_path}")
 
-        train_x = [f for f in x_files if "train" in f.name.lower()]
-        test_x = [f for f in x_files if "test" in f.name.lower()]
+        dbc_file = dbc_files[0]
 
-        if train_x and test_x:
-            print("Dataset já dividido em treino/teste")
-            X_train = self._load_x_file(train_x[0])
-            X_test = self._load_x_file(test_x[0])
+        with open(dbc_file, "rb") as f:
+            header = f.read(100)
 
-            train_dbc = [f for f in dbc_files if "train" in f.name.lower()]
-            test_dbc = [f for f in dbc_files if "test" in f.name.lower()]
+        is_elvira = b"Elvira" in header or b"data-base" in header
 
-            if train_dbc and test_dbc:
-                y_train = self._load_dbc_file(train_dbc[0])
-                y_test = self._load_dbc_file(test_dbc[0])
-            else:
-                raise FileNotFoundError("Arquivos .dbc de treino/teste não encontrados")
+        if is_elvira:
+            print("Formato Elvira detectado")
+            X, y = self._parse_elvira_dbc(dbc_file)
         else:
-            print("Dividindo dataset em treino/teste")
-            X = self._load_x_file(x_files[0])
-            y = self._load_dbc_file(dbc_files[0])
+            raise ValueError(f"Formato não reconhecido para {dbc_file.name}")
 
-            if len(X) != len(y):
-                print(
-                    f"Aviso: O número de amostras em X ({len(X)}) e y ({len(y)}) não coincide. Ajustando para o menor tamanho."
-                )
-                min_len = min(len(X), len(y))
-                X, y = X[:min_len], y[:min_len]
-
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=test_size, random_state=random_state, stratify=y
-            )
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state, stratify=y
+        )
 
         print(
             f"Conjunto de dados {dataset_name} carregado com sucesso. X_train: {X_train.shape}, X_test: {X_test.shape}"
@@ -124,6 +259,7 @@ class DataLoader:
         print(
             f"Features: {X_train.shape[1]}, Samples: {len(X_train) + len(X_test)}, Classes: {len(np.unique(y_train))}"
         )
+
         return X_train, y_train, X_test, y_test
 
     def _load_x_file(self, filepath: Path) -> np.ndarray:
@@ -252,36 +388,36 @@ class DataLoader:
         """Carrega dataset de Câncer de Ovário."""
         return self.load_microarray_dataset("OVARIAN-PBSII-061902", **kwargs)
 
+    @staticmethod
+    def load_dataset(
+        name: str, data_root: str = "data/raw", **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Carrega qualquer dataset por nome.
 
-def load_dataset(
-    name: str, data_root: str = "data/raw", **kwargs
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Carrega qualquer dataset por nome.
+        Args:
+            name (str): Nome do dataset ('fashion-mnist', 'colon', 'leukemia', 'cns', 'mll', 'ovarian').
+            data_root (str): Diretório raiz dos dados.
+            **kwargs: Argumentos adicionais passados ao loader.
 
-    Args:
-        name (str): Nome do dataset ('fashion-mnist', 'colon', 'leukemia', 'cns', 'mll', 'ovarian').
-        data_root (str): Diretório raiz dos dados.
-        **kwargs: Argumentos adicionais passados ao loader.
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: X_train, y_train, X_test, y_test.
+        """
+        loader = DataLoader(data_root)
 
-    Returns:
-        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: X_train, y_train, X_test, y_test.
-    """
-    loader = DataLoader(data_root)
+        name = name.lower()
 
-    name = name.lower()
-
-    if name in ["fashion-mnist", "fashion_mnist"]:
-        return loader.load_fashion_mnist(**kwargs)
-    elif name == "colon":
-        return loader.load_colon(**kwargs)
-    elif name in ["leukemia", "leukemia_allaml"]:
-        return loader.load_leukemia_allaml(**kwargs)
-    elif name == "cns":
-        return loader.load_cns(**kwargs)
-    elif name == "mll":
-        return loader.load_mll(**kwargs)
-    elif name == "ovarian":
-        return loader.load_ovarian(**kwargs)
-    else:
-        raise ValueError(f"Dataset desconhecido: {name}")
+        if name in ["fashion-mnist", "fashion_mnist"]:
+            return loader.load_fashion_mnist(**kwargs)
+        elif name == "colon":
+            return loader.load_colon(**kwargs)
+        elif name in ["leukemia", "leukemia_allaml"]:
+            return loader.load_leukemia_allaml(**kwargs)
+        elif name == "cns":
+            return loader.load_cns(**kwargs)
+        elif name == "mll":
+            return loader.load_mll(**kwargs)
+        elif name == "ovarian":
+            return loader.load_ovarian(**kwargs)
+        else:
+            raise ValueError(f"Dataset desconhecido: {name}")
