@@ -4,6 +4,7 @@ version = "0.2.0"
 description = "Replicação do artigo: Feature selection algorithm based on optimized genetic algorithm"
 authors = [
     {name = "Giovanni Braga", email = "giovannibragav@gmail.com"}
+    {name = "Gabriel Mattos", email = "gabrielmatsan@hotmail.com"}
 ]
 requires-python = ">=3.10"
 readme = "README.md"
