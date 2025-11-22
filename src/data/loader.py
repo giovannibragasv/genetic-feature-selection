@@ -46,6 +46,18 @@ class DataLoader:
 
         print(f"Encontrados {len(nodes)} nós/variáveis")
 
+        label_node = nodes[0] if nodes else None
+        print(f"Nó de label: {label_node}")
+
+        label_states = None
+        if label_node:
+            states_match = re.search(
+                rf"node\s+{label_node}.*?states\s*=\s*\((.*?)\)", content, re.DOTALL
+            )
+            if states_match:
+                label_states = [s.strip() for s in states_match.group(1).split()]
+                print(f"Estados do label: {label_states}")
+
         cases_match = re.search(r"cases\s*=\s*\((.*?)\)\s*;", content, re.DOTALL)
 
         if not cases_match:
@@ -80,23 +92,31 @@ class DataLoader:
         if not case_rows:
             raise ValueError("Nenhum dado foi extraído da seção cases")
 
-        label_node = nodes[0] if nodes else None
-        print(f"Nó de label: {label_node}")
-
         processed_data = []
         labels = []
+
+        label_mapping = {}
+        if label_states:
+            label_mapping = {state: idx for idx, state in enumerate(label_states)}
+            print(f"Mapeamento de labels: {label_mapping}")
 
         for row in case_rows:
             if not row:
                 continue
 
             label_value = row[0]
-            if label_value in ["positive", "negative", "normal", "tumor"]:
-                labels.append(0 if label_value in ["positive", "tumor"] else 1)
+
+            if label_value in label_mapping:
+                labels.append(label_mapping[label_value])
+            elif label_value in ["positive", "tumor"]:
+                labels.append(0)
+            elif label_value in ["negative", "normal"]:
+                labels.append(1)
             else:
                 try:
                     labels.append(int(label_value))
                 except:
+                    print(f"Aviso: Label desconhecida '{label_value}', atribuindo 0")
                     labels.append(0)
 
             features = []
@@ -112,7 +132,7 @@ class DataLoader:
         y = np.array(labels, dtype=np.int32)
 
         print(f"Matriz de dados: X={X.shape}, y={y.shape}")
-        print(f"Classes únicas em y: {np.unique(y)}")
+        print(f"Classes únicas em y: {np.unique(y)} (distribuição: {np.bincount(y)})")
 
         return X, y
 
