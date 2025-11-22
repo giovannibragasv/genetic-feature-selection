@@ -388,36 +388,32 @@ class DataLoader:
         """Carrega dataset de Câncer de Ovário."""
         return self.load_microarray_dataset("OVARIAN-PBSII-061902", **kwargs)
 
-    @staticmethod
     def load_dataset(
-        name: str, data_root: str = "data/raw", **kwargs
+        self, name: str, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Carrega qualquer dataset por nome.
 
         Args:
             name (str): Nome do dataset ('fashion-mnist', 'colon', 'leukemia', 'cns', 'mll', 'ovarian').
-            data_root (str): Diretório raiz dos dados.
             **kwargs: Argumentos adicionais passados ao loader.
 
         Returns:
             Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: X_train, y_train, X_test, y_test.
         """
-        loader = DataLoader(data_root)
-
         name = name.lower()
 
         if name in ["fashion-mnist", "fashion_mnist"]:
-            return loader.load_fashion_mnist(**kwargs)
+            return self.load_fashion_mnist(**kwargs)
         elif name == "colon":
-            return loader.load_colon(**kwargs)
+            return self.load_colon(**kwargs)
         elif name in ["leukemia", "leukemia_allaml"]:
-            return loader.load_leukemia_allaml(**kwargs)
+            return self.load_leukemia_allaml(**kwargs)
         elif name == "cns":
-            return loader.load_cns(**kwargs)
+            return self.load_cns(**kwargs)
         elif name == "mll":
-            return loader.load_mll(**kwargs)
+            return self.load_mll(**kwargs)
         elif name == "ovarian":
-            return loader.load_ovarian(**kwargs)
+            return self.load_ovarian(**kwargs)
         else:
             raise ValueError(f"Dataset desconhecido: {name}")
