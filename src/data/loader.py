@@ -102,3 +102,46 @@ class DataLoader:
         )
         print(f"Features: {X.shape[1]}, Samples: {X.shape[0]}, Classes: {len(np.unique(y))}")
         return X_train, y_train, X_test, y_test
+
+    def _load_x_file(self, filepath: Path) -> np.ndarray:
+        """
+        Carrega um arquivo .x e retorna os dados como um array numpy.
+
+        Args:
+            filepath (Path): Caminho para o arquivo .x.
+
+        Returns:
+            np.ndarray: Dados carregados do arquivo .x.
+        """
+        try:
+            df = pd.read_csv(filepath, sep="\t", header=None)
+            if df.shape[1] == 1:
+                df = pd.read_csv(filepath, sep=r"\s+", header=None)
+            return df.values
+        except Exception as e:
+            print(f"Erro carregando {filepath}: {e}")
+            return np.loadtxt(filepath)
+
+    def _load_dbc_file(self, filepath: Path) -> np.ndarray:
+        """
+        Carrega um arquivo .dbc e retorna os rótulos como um array numpy.
+
+        Args:
+            filepath (Path): Caminho para o arquivo .dbc.
+
+        Returns:
+            np.ndarray: Rótulos carregados do arquivo .dbc.
+        """
+        try:
+            with open(filepath, "r") as f:
+                labels = [line.strip() for line in f if line.strip()]
+
+            try:
+                return np.array([int(label) for label in labels])
+            except ValueError:
+                unique_labels = sorted(set(labels))
+                label_map = {label: idx for idx, label in enumerate(unique_labels)}
+                return np.array([label_map[label] for label in labels])
+        except Exception as e:
+            print(f"Erro carregando {filepath}: {e}")
+            raise
