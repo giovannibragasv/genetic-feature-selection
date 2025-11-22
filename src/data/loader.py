@@ -145,3 +145,25 @@ class DataLoader:
         except Exception as e:
             print(f"Erro carregando {filepath}: {e}")
             raise
+
+    def load_colon(self, **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Carrega dataset de Câncer de Cólon."""
+        return self.load_microarray_dataset("COLON-TUMOR", **kwargs)
+
+    def load_leukemia_allaml(
+        self, **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Carrega dataset de Leucemia ALL-AML."""
+        return self.load_microarray_dataset("ALL-AML_LEUKEMIA", **kwargs)
+
+    def load_cns(self, **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Carrega dataset do Sistema Nervoso Central."""
+        return self.load_microarray_dataset("NERVOUS-SYSTEM", **kwargs)
+
+    def load_mll(self, **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Carrega dataset de Leucemia MLL."""
+        return self.load_microarray_dataset("MLL-LEUKEMIA", **kwargs)
+
+    def load_ovarian(self, **kwargs) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Carrega dataset de Câncer de Ovário."""
+        return self.load_microarray_dataset("OVARIAN-PBSII-061902", **kwargs)
