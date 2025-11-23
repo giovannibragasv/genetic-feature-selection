@@ -136,3 +136,45 @@ class KNNClassifier:
             probas.append(class_probs)
 
         return np.array(probas)
+
+
+def find_optimal_k(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    k_range: range = range(1, 19),
+    distance_metric: str = "euclidean",
+) -> tuple:
+    """
+    Encontra o valor ótimo de K testando múltiplos valores.
+    Conforme Figure 9 do artigo (testa k de 1 a 18).
+
+    Args:
+        X_train (np.ndarray): Features de treino.
+        y_train (np.ndarray): Labels de treino.
+        X_test (np.ndarray): Features de teste.
+        y_test (np.ndarray): Labels de teste.
+        k_range (range): Range de valores de k para testar.
+        distance_metric (str): Métrica de distância.
+
+    Returns:
+        tuple: (k_ótimo, acurácias, k_values)
+    """
+    accuracies = []
+    k_values = list(k_range)
+
+    for k in k_values:
+        knn = KNNClassifier(k=k, distance_metric=distance_metric)
+        knn.fit(X_train, y_train)
+        acc = knn.score(X_test, y_test)
+        accuracies.append(acc)
+        print(f"k={k}: Acurácia={acc:.4f}")
+
+    best_idx = np.argmax(accuracies)
+    best_k = k_values[best_idx]
+    best_acc = accuracies[best_idx]
+
+    print(f"\n✓ Melhor k={best_k} com acurácia={best_acc:.4f}")
+
+    return best_k, accuracies, k_values
