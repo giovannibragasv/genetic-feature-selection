@@ -109,3 +109,91 @@ class GeneticAlgorithm:
         
         return self
     
+    def _initialize_population(self):
+        """Inicializa população com chromosomes binários aleatórios."""
+        self.population = np.random.randint(
+            0, 2, 
+            size=(self.population_size, self.n_features)
+        )
+        
+        for i in range(self.population_size):
+            if np.sum(self.population[i]) == 0:
+                random_indices = np.random.choice(
+                    self.n_features, 
+                    size=max(1, self.n_features // 10),
+                    replace=False
+                )
+                self.population[i][random_indices] = 1
+    
+    def _evaluate_fitness(self, fitness_function: Callable[[np.ndarray], float]) -> np.ndarray:
+        """Avalia fitness de todos chromosomes na população."""
+        fitness_scores = np.zeros(self.population_size)
+        
+        for i, chromosome in enumerate(self.population):
+            if np.sum(chromosome) == 0:
+                fitness_scores[i] = 0.0
+            else:
+                fitness_scores[i] = fitness_function(chromosome)
+        
+        return fitness_scores
+    
+    def _selection(self) -> np.ndarray:
+        """Seleção por torneio."""
+        tournament_indices = np.random.choice(
+            self.population_size,
+            size=self.tournament_size,
+            replace=False
+        )
+        tournament_fitness = self.fitness_scores[tournament_indices]
+        winner_idx = tournament_indices[np.argmax(tournament_fitness)]
+        
+        return self.population[winner_idx].copy()
+    
+    def _crossover(self, parent1: np.ndarray, parent2: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Single-point crossover."""
+        crossover_point = np.random.randint(1, self.n_features)
+        
+        offspring1 = np.concatenate([
+            parent1[:crossover_point],
+            parent2[crossover_point:]
+        ])
+        
+        offspring2 = np.concatenate([
+            parent2[:crossover_point],
+            parent1[crossover_point:]
+        ])
+        
+        return offspring1, offspring2
+    
+    def _mutation(self, chromosome: np.ndarray) -> np.ndarray:
+        """Bit-flip mutation."""
+        mutated = chromosome.copy()
+        
+        for i in range(self.n_features):
+            if np.random.random() < self.mutation_rate:
+                mutated[i] = 1 - mutated[i]
+        
+        if np.sum(mutated) == 0:
+            random_idx = np.random.randint(0, self.n_features)
+            mutated[random_idx] = 1
+        
+        return mutated
+    
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        """Aplica seleção de features usando melhor chromosome encontrado."""
+        if self.best_chromosome is None:
+            raise ValueError("GA não foi executado. Chame fit() primeiro.")
+        
+        selected_features = self.best_chromosome == 1
+        return X[:, selected_features]
+    
+    def get_selected_features(self) -> np.ndarray:
+        """Retorna índices das features selecionadas."""
+        if self.best_chromosome is None:
+            raise ValueError("GA não foi executado. Chame fit() primeiro.")
+        
+        return np.where(self.best_chromosome == 1)[0]
+    
+    def get_fitness_history(self) -> list:
+        """Retorna histórico de fitness por geração."""
+        return self.fitness_history
