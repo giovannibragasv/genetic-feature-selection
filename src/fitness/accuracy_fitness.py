@@ -1,3 +1,5 @@
+# src/fitness/accuracy_fitness.py
+
 import numpy as np
 from typing import Optional
 from ..algorithms.knn_classifier import KNNClassifier
@@ -52,7 +54,7 @@ class AccuracyFitness:
         X_train_selected = self.X_train[:, selected_features]
         X_test_selected = self.X_test[:, selected_features]
         
-        knn = KNNClassifier(k=self.k, metric=self.metric)
+        knn = KNNClassifier(k=self.k, distance_metric=self.metric)
         knn.fit(X_train_selected, self.y_train)
         accuracy = knn.score(X_test_selected, self.y_test)
         
