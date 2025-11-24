@@ -1,15 +1,17 @@
-# src/fitness/accuracy_fitness.py
-
 import numpy as np
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from ..algorithms.knn_classifier import KNNClassifier
+
+if TYPE_CHECKING:
+    from ..encoding import BaseEncoding
 
 
 class AccuracyFitness:
     """
     Função de fitness baseada em acurácia do KNN.
     
-    Avalia quality de um chromosome (seleção de features) usando KNN.
+    Avalia qualidade de um chromosome (seleção de features) usando KNN.
+    Suporta múltiplos encodings através do parâmetro encoding.
     """
     
     def __init__(
@@ -20,7 +22,8 @@ class AccuracyFitness:
         y_test: np.ndarray,
         k: int = 7,
         metric: str = 'euclidean',
-        penalty_weight: float = 0.0
+        penalty_weight: float = 0.0,
+        encoding: Optional['BaseEncoding'] = None
     ):
         self.X_train = X_train
         self.y_train = y_train
@@ -29,6 +32,7 @@ class AccuracyFitness:
         self.k = k
         self.metric = metric
         self.penalty_weight = penalty_weight
+        self.encoding = encoding
         
         self.n_features = X_train.shape[1]
         self.evaluation_count = 0
@@ -38,14 +42,19 @@ class AccuracyFitness:
         Avalia fitness de um chromosome.
         
         Args:
-            chromosome: Array binário indicando features selecionadas
+            chromosome: Chromosome codificado (será decodificado se encoding fornecido)
             
         Returns:
             Fitness score (acurácia, possivelmente penalizada)
         """
         self.evaluation_count += 1
         
-        selected_features = chromosome == 1
+        if self.encoding is not None:
+            binary = self.encoding.decode(chromosome)
+        else:
+            binary = chromosome
+        
+        selected_features = binary == 1
         n_selected = np.sum(selected_features)
         
         if n_selected == 0:
@@ -82,7 +91,8 @@ def create_fitness_function(
     y_test: np.ndarray,
     k: int = 7,
     metric: str = 'euclidean',
-    penalty_weight: float = 0.0
+    penalty_weight: float = 0.0,
+    encoding: Optional['BaseEncoding'] = None
 ) -> AccuracyFitness:
     """
     Factory function para criar função de fitness.
@@ -95,6 +105,7 @@ def create_fitness_function(
         k: Número de vizinhos para KNN
         metric: Métrica de distância
         penalty_weight: Peso da penalização por número de features (0-1)
+        encoding: Encoding para decodificar chromosomes (opcional)
         
     Returns:
         Função de fitness configurada
@@ -106,5 +117,6 @@ def create_fitness_function(
         y_test=y_test,
         k=k,
         metric=metric,
-        penalty_weight=penalty_weight
+        penalty_weight=penalty_weight,
+        encoding=encoding
     )
