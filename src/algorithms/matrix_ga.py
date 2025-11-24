@@ -102,3 +102,64 @@ class MatrixGeneticAlgorithm:
         
         return self
     
+    def _initialize_population(self):
+        """Inicializa população como matriz de chromosomes binários."""
+        self.population = np.random.randint(
+            0, 2, 
+            size=(self.population_size, self.n_features)
+        )
+        
+        for i in range(self.population_size):
+            if np.sum(self.population[i]) == 0:
+                random_indices = np.random.choice(
+                    self.n_features, 
+                    size=max(1, self.n_features // 10),
+                    replace=False
+                )
+                self.population[i][random_indices] = 1
+    
+    def _evaluate_fitness(self, fitness_function: Callable[[np.ndarray], float]) -> np.ndarray:
+        """Avalia fitness de todos chromosomes."""
+        fitness_scores = np.zeros(self.population_size)
+        
+        for i, chromosome in enumerate(self.population):
+            if np.sum(chromosome) == 0:
+                fitness_scores[i] = 0.0
+            else:
+                fitness_scores[i] = fitness_function(chromosome)
+        
+        return fitness_scores
+    
+    def _evolve_population(self) -> np.ndarray:
+        """
+        Evolui população usando operadores matriciais.
+        Combina elitismo, seleção, crossover e mutação.
+        """
+        new_population = []
+        
+        if self.elitism > 0:
+            elite_indices = np.argsort(self.fitness_scores)[-self.elitism:]
+            for idx in elite_indices:
+                new_population.append(self.population[idx].copy())
+        
+        population_matrix = self.population.reshape(
+            self.matrix_rows, 
+            self.matrix_cols, 
+            self.n_features
+        )
+        
+        while len(new_population) < self.population_size:
+            if np.random.random() < 0.5:
+                offspring1, offspring2 = self._row_crossover(population_matrix)
+            else:
+                offspring1, offspring2 = self._column_crossover(population_matrix)
+            
+            offspring1 = self._mutation(offspring1)
+            offspring2 = self._mutation(offspring2)
+            
+            new_population.append(offspring1)
+            if len(new_population) < self.population_size:
+                new_population.append(offspring2)
+        
+        return np.array(new_population[:self.population_size])
+    
