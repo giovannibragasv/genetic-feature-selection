@@ -1,12 +1,16 @@
 import numpy as np
-from typing import Callable, Tuple, Optional
+from typing import Callable, Tuple, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..encoding import BaseEncoding
 
 
 class GeneticAlgorithm:
     """
     Algoritmo Genético para seleção de features.
     
-    Utiliza encoding binário onde cada gene representa presença (1) ou ausência (0) de uma feature.
+    Suporta múltiplos encodings (binary, decimal, real, gaussian, adaptive).
+    Se nenhum encoding for fornecido, usa encoding binário interno.
     """
     
     def __init__(
@@ -17,6 +21,7 @@ class GeneticAlgorithm:
         mutation_rate: float = 0.01,
         tournament_size: int = 3,
         elitism: int = 2,
+        encoding: Optional['BaseEncoding'] = None,
         random_state: Optional[int] = None
     ):
         self.population_size = population_size
@@ -25,6 +30,7 @@ class GeneticAlgorithm:
         self.mutation_rate = mutation_rate
         self.tournament_size = tournament_size
         self.elitism = elitism
+        self.encoding = encoding
         self.random_state = random_state
         
         self.population = None
@@ -51,6 +57,13 @@ class GeneticAlgorithm:
             verbose: Se True, imprime progresso
         """
         self.n_features = n_features
+        
+        if self.encoding is not None and self.encoding.n_features != n_features:
+            raise ValueError(
+                f"Encoding n_features ({self.encoding.n_features}) != "
+                f"n_features fornecido ({n_features})"
+            )
+        
         self._initialize_population()
         
         for generation in range(self.generations):
@@ -63,19 +76,26 @@ class GeneticAlgorithm:
                 self.best_fitness = current_best_fitness
                 self.best_chromosome = self.population[current_best_idx].copy()
             
+            if self._is_adaptive_encoding():
+                self.encoding.update_threshold(current_best_fitness)
+            
+            n_features_selected = self._get_n_selected(self.best_chromosome)
+            
             self.fitness_history.append({
                 'generation': generation,
                 'best_fitness': self.best_fitness,
                 'mean_fitness': np.mean(self.fitness_scores),
                 'std_fitness': np.std(self.fitness_scores),
-                'n_features_best': np.sum(self.best_chromosome)
+                'n_features_best': n_features_selected
             })
             
             if verbose and generation % 10 == 0:
-                n_features_selected = np.sum(self.best_chromosome)
+                extra_info = ""
+                if self._is_adaptive_encoding():
+                    extra_info = f", Threshold={self.encoding.threshold:.3f}"
                 print(f"Geração {generation}: "
                       f"Fitness={self.best_fitness:.4f}, "
-                      f"Features={n_features_selected}/{n_features}")
+                      f"Features={n_features_selected}/{n_features}{extra_info}")
             
             new_population = []
             
@@ -103,34 +123,53 @@ class GeneticAlgorithm:
             self.population = np.array(new_population[:self.population_size])
         
         if verbose:
-            n_features_selected = np.sum(self.best_chromosome)
+            n_features_selected = self._get_n_selected(self.best_chromosome)
             print(f"\nFinalizado: Fitness={self.best_fitness:.4f}, "
                   f"Features={n_features_selected}/{n_features}")
         
         return self
     
+    def _is_adaptive_encoding(self) -> bool:
+        """Verifica se encoding é adaptativo."""
+        if self.encoding is None:
+            return False
+        return hasattr(self.encoding, 'update_threshold')
+    
+    def _get_n_selected(self, chromosome: np.ndarray) -> int:
+        """Retorna número de features selecionadas."""
+        if self.encoding is not None:
+            return self.encoding.get_n_selected_features(chromosome)
+        return int(np.sum(chromosome))
+    
     def _initialize_population(self):
-        """Inicializa população com chromosomes binários aleatórios."""
-        self.population = np.random.randint(
-            0, 2, 
-            size=(self.population_size, self.n_features)
-        )
-        
-        for i in range(self.population_size):
-            if np.sum(self.population[i]) == 0:
-                random_indices = np.random.choice(
-                    self.n_features, 
-                    size=max(1, self.n_features // 10),
-                    replace=False
-                )
-                self.population[i][random_indices] = 1
+        """Inicializa população."""
+        if self.encoding is not None:
+            self.population = np.array([
+                self.encoding.initialize_chromosome()
+                for _ in range(self.population_size)
+            ])
+        else:
+            self.population = np.random.randint(
+                0, 2, 
+                size=(self.population_size, self.n_features)
+            )
+            
+            for i in range(self.population_size):
+                if np.sum(self.population[i]) == 0:
+                    random_indices = np.random.choice(
+                        self.n_features, 
+                        size=max(1, self.n_features // 10),
+                        replace=False
+                    )
+                    self.population[i][random_indices] = 1
     
     def _evaluate_fitness(self, fitness_function: Callable[[np.ndarray], float]) -> np.ndarray:
         """Avalia fitness de todos chromosomes na população."""
         fitness_scores = np.zeros(self.population_size)
         
         for i, chromosome in enumerate(self.population):
-            if np.sum(chromosome) == 0:
+            n_selected = self._get_n_selected(chromosome)
+            if n_selected == 0:
                 fitness_scores[i] = 0.0
             else:
                 fitness_scores[i] = fitness_function(chromosome)
@@ -150,7 +189,10 @@ class GeneticAlgorithm:
         return self.population[winner_idx].copy()
     
     def _crossover(self, parent1: np.ndarray, parent2: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Single-point crossover."""
+        """Crossover usando encoding ou single-point default."""
+        if self.encoding is not None:
+            return self.encoding.crossover(parent1, parent2)
+        
         crossover_point = np.random.randint(1, self.n_features)
         
         offspring1 = np.concatenate([
@@ -166,7 +208,10 @@ class GeneticAlgorithm:
         return offspring1, offspring2
     
     def _mutation(self, chromosome: np.ndarray) -> np.ndarray:
-        """Bit-flip mutation."""
+        """Mutação usando encoding ou bit-flip default."""
+        if self.encoding is not None:
+            return self.encoding.mutate(chromosome, self.mutation_rate)
+        
         mutated = chromosome.copy()
         
         for i in range(self.n_features):
@@ -184,7 +229,7 @@ class GeneticAlgorithm:
         if self.best_chromosome is None:
             raise ValueError("GA não foi executado. Chame fit() primeiro.")
         
-        selected_features = self.best_chromosome == 1
+        selected_features = self.get_selected_features()
         return X[:, selected_features]
     
     def get_selected_features(self) -> np.ndarray:
@@ -192,8 +237,19 @@ class GeneticAlgorithm:
         if self.best_chromosome is None:
             raise ValueError("GA não foi executado. Chame fit() primeiro.")
         
-        return np.where(self.best_chromosome == 1)[0]
+        if self.encoding is not None:
+            binary = self.encoding.decode(self.best_chromosome)
+        else:
+            binary = self.best_chromosome
+        
+        return np.where(binary == 1)[0]
     
     def get_fitness_history(self) -> list:
         """Retorna histórico de fitness por geração."""
         return self.fitness_history
+    
+    def get_encoding_stats(self) -> Optional[dict]:
+        """Retorna estatísticas do encoding (se adaptive)."""
+        if self._is_adaptive_encoding():
+            return self.encoding.get_stats()
+        return None
