@@ -9,17 +9,27 @@ class BinaryEncoding(BaseEncoding):
     1 = feature selecionada, 0 = feature não selecionada.
     """
     
+    def __init__(self, n_features: int, initial_feature_ratio: float = 0.1):
+        """
+        Args:
+            n_features: Número total de features
+            initial_feature_ratio: Fração de features selecionadas inicialmente (default 10%)
+        """
+        super().__init__(n_features)
+        self.initial_feature_ratio = initial_feature_ratio
+    
     def initialize_chromosome(self) -> np.ndarray:
-        """Inicializa chromosome binário aleatório."""
-        chromosome = np.random.randint(0, 2, size=self.n_features)
+        """Inicializa chromosome binário ESPARSO."""
+        chromosome = np.zeros(self.n_features, dtype=int)
         
-        if np.sum(chromosome) == 0:
-            random_indices = np.random.choice(
-                self.n_features,
-                size=max(1, self.n_features // 10),
-                replace=False
-            )
-            chromosome[random_indices] = 1
+        n_to_select = max(1, int(self.n_features * self.initial_feature_ratio))
+        n_to_select = np.random.randint(
+            max(1, n_to_select // 2),
+            min(self.n_features, n_to_select * 2)
+        )
+        
+        indices = np.random.choice(self.n_features, size=n_to_select, replace=False)
+        chromosome[indices] = 1
         
         return chromosome
     
@@ -28,12 +38,17 @@ class BinaryEncoding(BaseEncoding):
         return chromosome.astype(int)
     
     def mutate(self, chromosome: np.ndarray, mutation_rate: float) -> np.ndarray:
-        """Mutação bit-flip."""
+        """Mutação bit-flip com bias para esparsidade."""
         mutated = chromosome.copy()
         
         for i in range(self.n_features):
             if np.random.random() < mutation_rate:
-                mutated[i] = 1 - mutated[i]
+                if mutated[i] == 1:
+                    if np.random.random() < 0.7:
+                        mutated[i] = 0
+                else:
+                    if np.random.random() < 0.3:
+                        mutated[i] = 1
         
         if np.sum(mutated) == 0:
             random_idx = np.random.randint(0, self.n_features)
@@ -46,17 +61,15 @@ class BinaryEncoding(BaseEncoding):
         parent1: np.ndarray, 
         parent2: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Single-point crossover."""
-        crossover_point = np.random.randint(1, self.n_features)
+        """Uniform crossover (melhor para feature selection)."""
+        mask = np.random.randint(0, 2, size=self.n_features)
         
-        offspring1 = np.concatenate([
-            parent1[:crossover_point],
-            parent2[crossover_point:]
-        ])
+        offspring1 = np.where(mask, parent1, parent2)
+        offspring2 = np.where(mask, parent2, parent1)
         
-        offspring2 = np.concatenate([
-            parent2[:crossover_point],
-            parent1[crossover_point:]
-        ])
+        if np.sum(offspring1) == 0:
+            offspring1[np.random.randint(0, self.n_features)] = 1
+        if np.sum(offspring2) == 0:
+            offspring2[np.random.randint(0, self.n_features)] = 1
         
         return offspring1, offspring2

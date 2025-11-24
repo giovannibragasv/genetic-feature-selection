@@ -63,28 +63,32 @@ class AdaptiveEncoding(BaseEncoding):
         return binary
     
     def update_threshold(self, current_fitness: float):
-        """
-        Atualiza threshold baseado no fitness atual.
-        """
-        self.n_updates += 1
-        self.fitness_history.append(current_fitness)
-        
-        if current_fitness > self.best_fitness:
-            self.best_fitness = current_fitness
-            self.threshold += self.learning_rate
-            self.stagnation_counter = 0
-        else:
-            self.stagnation_counter += 1
-            
-            if self.stagnation_counter >= self.stagnation_threshold:
-                self.threshold -= self.learning_rate * 2
-                self.stagnation_counter = 0
-            else:
-                self.threshold -= self.learning_rate * 0.5
-        
-        self.threshold = np.clip(self.threshold, self.min_threshold, self.max_threshold)
-        self.threshold_history.append(self.threshold)
-    
+      """
+      Atualiza threshold baseado no fitness atual.
+      
+      Lógica INVERTIDA para feature selection:
+      - Fitness melhora → threshold DIMINUI (permite explorar com mais features)
+      - Fitness estagna → threshold AUMENTA (força redução de features)
+      """
+      self.n_updates += 1
+      self.fitness_history.append(current_fitness)
+      
+      if current_fitness > self.best_fitness + 0.001:
+          self.best_fitness = current_fitness
+          self.threshold -= self.learning_rate * 0.5
+          self.stagnation_counter = 0
+      else:
+          self.stagnation_counter += 1
+          
+          if self.stagnation_counter >= self.stagnation_threshold:
+              self.threshold += self.learning_rate * 2
+              self.stagnation_counter = 0
+          else:
+              self.threshold += self.learning_rate
+      
+      self.threshold = np.clip(self.threshold, self.min_threshold, self.max_threshold)
+      self.threshold_history.append(self.threshold)
+      
     def mutate(self, chromosome: np.ndarray, mutation_rate: float) -> np.ndarray:
         """Mutação gaussiana adaptativa."""
         mutated = chromosome.copy()
