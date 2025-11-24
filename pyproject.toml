@@ -1,6 +1,6 @@
 [project]
 name = "genetic-feature-selection"
-version = "0.2.0"
+version = "0.5.0"
 description = "Replicação do artigo: Feature selection algorithm based on optimized genetic algorithm"
 authors = [
     {name = "Giovanni Braga", email = "giovannibragav@gmail.com"}
