@@ -9,13 +9,38 @@ class RealEncoding(BaseEncoding):
     Threshold define quais features são selecionadas.
     """
     
-    def __init__(self, n_features: int, threshold: float = 0.5):
+    def __init__(
+        self, 
+        n_features: int, 
+        threshold: float = 0.5,
+        initial_feature_ratio: float = 0.1
+    ):
+        """
+        Args:
+            n_features: Número total de features
+            threshold: Valor >= threshold seleciona a feature
+            initial_feature_ratio: Fração de features a selecionar inicialmente (default 10%)
+        """
         super().__init__(n_features)
         self.threshold = threshold
+        self.initial_feature_ratio = initial_feature_ratio
     
     def initialize_chromosome(self) -> np.ndarray:
-        """Inicializa chromosome com valores reais aleatórios [0, 1]."""
-        chromosome = np.random.random(size=self.n_features)
+        """
+        Inicializa chromosome com distribuição esparsa.
+        Maioria dos valores baixos, poucos acima do threshold.
+        """
+        chromosome = np.random.random(size=self.n_features) * self.threshold * 0.8
+        
+        n_to_select = max(1, int(self.n_features * self.initial_feature_ratio))
+        n_to_select = np.random.randint(
+            max(1, n_to_select // 2), 
+            min(self.n_features, n_to_select * 2)
+        )
+        
+        indices = np.random.choice(self.n_features, size=n_to_select, replace=False)
+        chromosome[indices] = self.threshold + np.random.random(n_to_select) * (1 - self.threshold)
+        
         return chromosome
     
     def decode(self, chromosome: np.ndarray) -> np.ndarray:
