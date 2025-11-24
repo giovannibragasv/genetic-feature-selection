@@ -5,41 +5,46 @@ from .base_encoding import BaseEncoding
 
 class GaussianEncoding(BaseEncoding):
     """
-    Encoding gaussiano: genes são valores amostrados de distribuição normal.
-    
-    Genes representam "relevância" das features, inicializados com distribuição
-    gaussiana centrada em mean com desvio std. Decode usa threshold para
-    converter em seleção binária.
-    
-    Referência: Feng (2024), seção 4.2.4
+    Encoding Gaussiano: genes amostrados de distribuição normal.
     """
     
     def __init__(
         self, 
         n_features: int, 
-        mean: float = 0.5,
-        std: float = 0.2,
-        threshold: float = 0.5
+        mean: float = 0.5, 
+        std: float = 0.2, 
+        threshold: float = 0.5,
+        initial_feature_ratio: float = 0.1
     ):
         super().__init__(n_features)
         self.mean = mean
         self.std = std
         self.threshold = threshold
+        self.initial_feature_ratio = initial_feature_ratio
     
     def initialize_chromosome(self) -> np.ndarray:
         """
-        Inicializa chromosome com valores amostrados de distribuição gaussiana.
-        Valores são clipped para [0, 1].
+        Inicializa com distribuição esparsa.
         """
-        chromosome = np.random.normal(self.mean, self.std, size=self.n_features)
-        chromosome = np.clip(chromosome, 0, 1)
+        chromosome = np.random.random(size=self.n_features) * self.threshold * 0.8
+        
+        n_to_select = max(1, int(self.n_features * self.initial_feature_ratio))
+        n_to_select = np.random.randint(
+            max(1, n_to_select // 2), 
+            min(self.n_features, n_to_select * 2)
+        )
+        
+        indices = np.random.choice(self.n_features, size=n_to_select, replace=False)
+        chromosome[indices] = np.clip(
+            np.random.normal(self.mean + 0.2, self.std, size=n_to_select),
+            self.threshold,
+            1.0
+        )
+        
         return chromosome
     
     def decode(self, chromosome: np.ndarray) -> np.ndarray:
-        """
-        Decodifica para binário usando threshold.
-        Feature selecionada se valor >= threshold.
-        """
+        """Decodifica para binário usando threshold."""
         binary = (chromosome >= self.threshold).astype(int)
         
         if np.sum(binary) == 0:
@@ -49,10 +54,7 @@ class GaussianEncoding(BaseEncoding):
         return binary
     
     def mutate(self, chromosome: np.ndarray, mutation_rate: float) -> np.ndarray:
-        """
-        Mutação gaussiana: adiciona ruído normal aos genes selecionados.
-        O desvio do ruído é proporcional ao std do encoding.
-        """
+        """Mutação gaussiana."""
         mutated = chromosome.copy()
         
         for i in range(self.n_features):
@@ -67,11 +69,11 @@ class GaussianEncoding(BaseEncoding):
         parent1: np.ndarray, 
         parent2: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Crossover aritmético ponderado com peso gaussiano.
-        Peso é amostrado de distribuição normal para cada gene.
-        """
-        weights = np.clip(np.random.normal(0.5, 0.2, size=self.n_features), 0, 1)
+        """Crossover aritmético ponderado."""
+        weights = np.clip(
+            np.random.normal(0.5, 0.2, size=self.n_features),
+            0, 1
+        )
         
         offspring1 = weights * parent1 + (1 - weights) * parent2
         offspring2 = (1 - weights) * parent1 + weights * parent2
@@ -81,29 +83,14 @@ class GaussianEncoding(BaseEncoding):
         
         return offspring1, offspring2
     
-    def set_threshold(self, threshold: float) -> None:
-        """
-        Define novo threshold para decodificação.
-        
-        Args:
-            threshold: Novo valor de threshold [0, 1]
-        """
-        self.threshold = np.clip(threshold, 0.05, 0.95)
+    def set_threshold(self, threshold: float):
+        """Permite ajustar threshold."""
+        self.threshold = np.clip(threshold, 0, 1)
     
-    def get_distribution_stats(self, chromosome: np.ndarray) -> dict:
-        """
-        Retorna estatísticas da distribuição do chromosome.
-        
-        Args:
-            chromosome: Chromosome para análise
-            
-        Returns:
-            dict: Estatísticas (mean, std, min, max)
-        """
+    def get_distribution_stats(self) -> dict:
+        """Retorna parâmetros da distribuição."""
         return {
-            'mean': float(np.mean(chromosome)),
-            'std': float(np.std(chromosome)),
-            'min': float(np.min(chromosome)),
-            'max': float(np.max(chromosome)),
-            'n_selected': int(np.sum(self.decode(chromosome)))
+            'mean': self.mean,
+            'std': self.std,
+            'threshold': self.threshold
         }
