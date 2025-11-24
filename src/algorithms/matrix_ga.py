@@ -163,3 +163,87 @@ class MatrixGeneticAlgorithm:
         
         return np.array(new_population[:self.population_size])
     
+    def _row_crossover(self, population_matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Crossover baseado em linhas da matriz populacional."""
+        parent1 = self._selection()
+        parent2 = self._selection()
+        
+        if np.random.random() < self.crossover_rate:
+            crossover_point = np.random.randint(1, self.n_features)
+            offspring1 = np.concatenate([
+                parent1[:crossover_point],
+                parent2[crossover_point:]
+            ])
+            offspring2 = np.concatenate([
+                parent2[:crossover_point],
+                parent1[crossover_point:]
+            ])
+        else:
+            offspring1 = parent1.copy()
+            offspring2 = parent2.copy()
+        
+        return offspring1, offspring2
+    
+    def _column_crossover(self, population_matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Crossover baseado em colunas da matriz populacional."""
+        parent1 = self._selection()
+        parent2 = self._selection()
+        
+        if np.random.random() < self.crossover_rate:
+            mask = np.random.random(self.n_features) < 0.5
+            offspring1 = np.where(mask, parent1, parent2)
+            offspring2 = np.where(mask, parent2, parent1)
+        else:
+            offspring1 = parent1.copy()
+            offspring2 = parent2.copy()
+        
+        return offspring1, offspring2
+    
+    def _selection(self) -> np.ndarray:
+        """Seleção por torneio."""
+        tournament_indices = np.random.choice(
+            self.population_size,
+            size=self.tournament_size,
+            replace=False
+        )
+        tournament_fitness = self.fitness_scores[tournament_indices]
+        winner_idx = tournament_indices[np.argmax(tournament_fitness)]
+        
+        return self.population[winner_idx].copy()
+    
+    def _mutation(self, chromosome: np.ndarray) -> np.ndarray:
+        """Mutação bit-flip."""
+        mutated = chromosome.copy()
+        
+        for i in range(self.n_features):
+            if np.random.random() < self.mutation_rate:
+                mutated[i] = 1 - mutated[i]
+        
+        if np.sum(mutated) == 0:
+            random_idx = np.random.randint(0, self.n_features)
+            mutated[random_idx] = 1
+        
+        return mutated
+    
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        """Aplica seleção de features usando melhor chromosome encontrado."""
+        if self.best_chromosome is None:
+            raise ValueError("MGA não foi executado. Chame fit() primeiro.")
+        
+        selected_features = self.best_chromosome == 1
+        return X[:, selected_features]
+    
+    def get_selected_features(self) -> np.ndarray:
+        """Retorna índices das features selecionadas."""
+        if self.best_chromosome is None:
+            raise ValueError("MGA não foi executado. Chame fit() primeiro.")
+        
+        return np.where(self.best_chromosome == 1)[0]
+    
+    def get_fitness_history(self) -> list:
+        """Retorna histórico de fitness por geração."""
+        return self.fitness_history
+    
+    def get_population_matrix_shape(self) -> Tuple[int, int]:
+        """Retorna dimensões da matriz populacional."""
+        return (self.matrix_rows, self.matrix_cols)
