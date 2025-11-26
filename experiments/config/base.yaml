@@ -1,0 +1,103 @@
+# Parâmetros do Algoritmo Genético
+ga_params:
+  population_size: 600
+  generations: 55
+  crossover_rate: 1.0
+  mutation_rate: 0.2
+  tournament_size: 3
+  elitism: 2
+
+# Parâmetros do KNN
+knn_params:
+  k: 7
+  metric: euclidean
+
+# Configuração experimental
+experiment:
+  test_size: 0.3
+  n_runs: 50
+  normalization: standard # z-score
+
+# Seeds para reprodutibilidade (50 runs)
+random_seeds:
+  - 42
+  - 123
+  - 456
+  - 789
+  - 1011
+  - 1213
+  - 1415
+  - 1617
+  - 1819
+  - 2021
+  - 2223
+  - 2425
+  - 2627
+  - 2829
+  - 3031
+  - 3233
+  - 3435
+  - 3637
+  - 3839
+  - 4041
+  - 4243
+  - 4445
+  - 4647
+  - 4849
+  - 5051
+  - 5253
+  - 5455
+  - 5657
+  - 5859
+  - 6061
+  - 6263
+  - 6465
+  - 6667
+  - 6869
+  - 7071
+  - 7273
+  - 7475
+  - 7677
+  - 7879
+  - 8081
+  - 8283
+  - 8485
+  - 8687
+  - 8889
+  - 9091
+  - 9293
+  - 9495
+  - 9697
+  - 9899
+  - 10001
+
+# Encodings a testar
+encodings:
+  - binary
+  - decimal
+  - real
+  - gaussian
+  - adaptive
+
+# Parâmetros específicos dos encodings
+encoding_params:
+  binary:
+    initial_feature_ratio: 0.1
+  decimal:
+    max_value: 10
+    threshold: 0.5
+    initial_feature_ratio: 0.1
+  real:
+    threshold: 0.5
+    initial_feature_ratio: 0.1
+  gaussian:
+    mean: 0.5
+    std: 0.2
+    threshold: 0.5
+    initial_feature_ratio: 0.1
+  adaptive:
+    initial_threshold: 0.5
+    learning_rate: 0.01
+    min_threshold: 0.1
+    max_threshold: 0.9
+    initial_feature_ratio: 0.1
