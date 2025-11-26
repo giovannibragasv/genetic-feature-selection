@@ -15,10 +15,10 @@ class GeneticAlgorithm:
     
     def __init__(
         self,
-        population_size: int = 100,
-        generations: int = 50,
-        crossover_rate: float = 0.8,
-        mutation_rate: float = 0.01,
+        population_size: int = 600,
+        generations: int = 55,
+        crossover_rate: float = 1.0,
+        mutation_rate: float = 0.2,
         tournament_size: int = 3,
         elitism: int = 2,
         encoding: Optional['BaseEncoding'] = None,
