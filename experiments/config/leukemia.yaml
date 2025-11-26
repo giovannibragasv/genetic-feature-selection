@@ -1,0 +1,9 @@
+dataset:
+  name: leukemia
+  folder: ALL-AML_LEUKEMIA
+  n_features: 7129
+  n_samples: 72
+  n_classes: 2
+  class_names:
+    - ALL # Acute Lymphoblastic Leukemia
+    - AML # Acute Myeloid Leukemia

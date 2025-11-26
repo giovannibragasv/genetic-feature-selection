@@ -1,0 +1,10 @@
+dataset:
+  name: mll
+  folder: MLL-LEUKEMIA
+  n_features: 12582
+  n_samples: 72
+  n_classes: 3
+  class_names:
+    - ALL # Acute Lymphoblastic Leukemia
+    - AML # Acute Myeloid Leukemia
+    - MLL # Mixed Lineage Leukemia

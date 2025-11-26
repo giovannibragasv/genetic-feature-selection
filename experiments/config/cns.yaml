@@ -1,0 +1,9 @@
+dataset:
+  name: cns
+  folder: NERVOUS-SYSTEM
+  n_features: 7129
+  n_samples: 60
+  n_classes: 2
+  class_names:
+    - survivors
+    - failures

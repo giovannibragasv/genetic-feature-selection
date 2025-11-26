@@ -1,0 +1,9 @@
+dataset:
+  name: colon
+  folder: COLON-TUMOR
+  n_features: 2000
+  n_samples: 62
+  n_classes: 2
+  class_names:
+    - tumor
+    - normal

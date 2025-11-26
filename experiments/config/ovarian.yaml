@@ -1,0 +1,9 @@
+dataset:
+  name: ovarian
+  folder: OVARIAN-PBSII-061902
+  n_features: 15154
+  n_samples: 253
+  n_classes: 2
+  class_names:
+    - cancer
+    - normal
