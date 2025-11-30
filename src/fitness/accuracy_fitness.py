@@ -1,9 +1,16 @@
 import numpy as np
 from typing import Optional, TYPE_CHECKING
-from ..algorithms.knn_classifier import KNNClassifier
+
+try:
+    from ..algorithms.knn_classifier import KNNClassifier
+except ImportError:
+    from algorithms.knn_classifier import KNNClassifier
 
 if TYPE_CHECKING:
-    from ..encoding import BaseEncoding
+    try:
+        from ..encoding import BaseEncoding
+    except ImportError:
+        from encoding import BaseEncoding
 
 
 class AccuracyFitness:
