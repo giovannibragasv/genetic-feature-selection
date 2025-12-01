@@ -189,27 +189,27 @@ python generate_tables.py    # Gera tabelas CSV e resumos
 python generate_figures.py   # Gera graficos de convergencia e comparacao
 ```
 
-<!-- ## Resultados
+## Resultados
 
-### Comparacao de Acuracia por Encoding (Table 5)
+### Comparacao de Acurácia por Encoding (Table 5)
 
 | Dataset  | Binary      | Decimal     | Real        | Gaussian    | Adaptive    |
 | -------- | ----------- | ----------- | ----------- | ----------- | ----------- |
-| Colon    | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] |
-| Leukemia | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] |
-| CNS      | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] |
-| MLL      | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] |
-| Ovarian  | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] | [RESULTADO] |
+| Colon    | 0.9158 ± 0.0444 | 0.9632 ± 0.0355 | 0.9632 ± 0.0355 | 1.0000 ± 0.0000 | 0.9947 ± 0.0166 |
+| Leukemia | 0.9636 ± 0.0636 | 0.9909 ± 0.0287 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| CNS      | 0.9000 ± 0.0438 | 0.9444 ± 0.0586 | 0.9333 ± 0.0511 | 0.9778 ± 0.0287 | 0.9833 ± 0.0268 |
+| MLL      | 0.8000 ± 0.0000 | 0.8000 ± 0.0000 | 0.8000 ± 0.0000 | 0.8000 ± 0.0000 | 0.8000 ± 0.0000 |
+| Ovarian  | 0.9526 ± 0.0257 | 0.9763 ± 0.0204 | 0.9829 ± 0.0206 | 0.9987 ± 0.0042 | 1.0000 ± 0.0000 |
 
-Valores apresentados como media com desvio padrao de 10 execucoes independentes.
+Valores apresentados como média com desvio padrãoo de 10 execuções independentes.
 
 ### Principais Achados
 
-[RESUMO DOS PRINCIPAIS RESULTADOS E COMPARACAO COM O ARTIGO ORIGINAL] -->
 
-## Implementacao
 
-### Decisoes de Projeto
+## Implementação
+
+### Decisões de Projeto
 
 1. **Implementacao from scratch**: KNN, algoritmo genetico e todos os encodings foram implementados sem uso de bibliotecas prontas (exceto NumPy para operacoes matriciais), conforme requisito da disciplina.
 
@@ -229,7 +229,7 @@ Valores apresentados como media com desvio padrao de 10 execucoes independentes.
 
 ## Referencias
 
-FENG, Guilian. Feature selection algorithm based on optimized genetic algorithm and the application in high-dimensional data processing. **PLOS ONE**, v. 19, n. 5, e0302619, 2024. DOI: https://doi.org/10.1371/journal.pone.0302619
+FENG, Guilian (2024). Feature selection algorithm based on optimized genetic algorithm and the application in high-dimensional data processing. **PLOS ONE** 19(5): e0303088.. [DOI](https://doi.org/10.1371/journal.pone.0303088)
 
 ## Licença
 
