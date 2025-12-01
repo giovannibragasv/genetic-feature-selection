@@ -1,0 +1,54 @@
+# Fashion-MNIST dataset configuration
+# Para replicar Table 3 do paper Feng 2024
+
+dataset:
+  name: "Fashion-MNIST"
+  source: "fashion-mnist.s3-website.eu-central-1.amazonaws.com"
+  
+  # Paper usa 80000 train + 15000 test
+  # Podemos usar subset menor para testes rápidos
+  full:
+    n_train: 60000
+    n_test: 10000
+    n_features: 784  # 28x28 pixels
+    n_classes: 10
+  
+  # Subset recomendado para experimentos
+  subset:
+    n_samples: 10000
+    test_size: 0.3
+  
+  classes:
+    - "T-shirt/top"
+    - "Trouser"
+    - "Pullover"
+    - "Dress"
+    - "Coat"
+    - "Sandal"
+    - "Shirt"
+    - "Sneaker"
+    - "Bag"
+    - "Ankle boot"
+
+# Resultados esperados do paper (Table 3)
+paper_results:
+  binary:
+    features_before: 785
+    features_after: 410
+    accuracy: 0.9688
+  decimal:
+    features_before: 728
+    features_after: 295
+    accuracy: 0.9814
+  real:
+    features_before: 700
+    features_after: 356
+    accuracy: 0.9681
+  gaussian:
+    features_before: 714
+    features_after: 406
+    accuracy: 0.9754
+  adaptive:
+    features_before: 724
+    features_after: 372
+    accuracy: 0.9815
